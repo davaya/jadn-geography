@@ -3,9 +3,9 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 
-import pandas as pd
-import html
-import datetime
+# import pandas as pd
+# import html
+# import datetime
 
 
 def initialize_driver():

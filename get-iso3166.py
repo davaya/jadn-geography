@@ -18,13 +18,14 @@ def initialize_driver():
 def get_product_data(driver, url):
     driver.implicitly_wait(5)
     driver.get(url)
-    header = driver.find_element(By.CLASS_NAME, "core-view-header")
-    hsoup = BeautifulSoup(header.get_attribute('outerHTML'))
+    header = driver.find_elements(By.CLASS_NAME, "core-view-line")
+    h = header.get_attribute('outerHTML')
+    # hsoup = BeautifulSoup(header.get_attribute('outerHTML'), features='html.parser')
     # he = header.find_elements(By.XPATH, './/*')   # recursive
     # he = header.find_elements(By.XPATH, './child::*')   # first level
     print(f'header "{driver.title}"')
     content = driver.find_element(By.ID, "country-additional-info")
-    csoup = BeautifulSoup(content.get_attribute('outerHTML'), features="html.parser")
+    # csoup = BeautifulSoup(content.get_attribute('outerHTML'), features="html.parser")
 
 """
     products, prices, currencies, ratings = [], [], [], []

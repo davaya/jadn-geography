@@ -1,6 +1,7 @@
 import json
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from time import sleep
 
 
 def initialize_driver():
@@ -16,7 +17,7 @@ def get_country_codes(driver, url) -> list[list]:
 
     :returns: Table of country names and codes, first row = column names
     """
-    driver.implicitly_wait(5)
+    driver.implicitly_wait(15)
     driver.get(url)
     driver.find_element(By.ID, 'onetrust-accept-btn-handler').click()    # Get rid of cookie blocking popup
 
@@ -30,9 +31,11 @@ def get_country_codes(driver, url) -> list[list]:
     e_table_body = e_grid.find_element(By.TAG_NAME, 'tbody')
     codes = [[v.text for v in e_grid.find_elements(By.TAG_NAME, 'th')]]
     while True:
-        for e in e_table_body.find_elements(By.TAG_NAME, 'tr'):
+        rows = e_table_body.find_elements(By.TAG_NAME, 'tr')
+        for e in rows:
             codes.append([v.text for v in e.find_elements(By.TAG_NAME, 'td')])
-        if not True:    # Server doesn't signal end of data - need to compare current to previous
+        pages = e_result.find_element(By.CLASS_NAME, 'paging-align-fix').find_elements(By.TAG_NAME, 'div')
+        if int(pages[-1].get_attribute('tabindex')) != 0:
             break
         e_result.find_element(By.CLASS_NAME, 'last').click()
     return codes

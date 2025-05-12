@@ -1,6 +1,7 @@
 import json
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import StaleElementReferenceException
 from time import sleep
 
 
@@ -23,21 +24,21 @@ def get_country_codes(driver, url) -> list[list]:
 
     e_pages = driver.find_elements(By.CLASS_NAME, 'v-radiobutton')    # Navigate to country codes pages
     pg = {p.find_element(By.TAG_NAME, 'label').text.lower().strip(): p.find_element(By.TAG_NAME, 'input') for p in e_pages}
-    pg['country codes'].click()
-    driver.find_element(By.CLASS_NAME, 'v-button-go').find_element(By.CLASS_NAME, 'v-button-caption').click()
+    pg['country codes'].click()     # Select "Country codes"
+    driver.find_element(By.CLASS_NAME, 'v-button-go').find_element(By.CLASS_NAME, 'v-button-caption').click() # SEARCH
 
     e_result = driver.find_element(By.CLASS_NAME, 'search-result-layout')
     e_grid = e_result.find_element(By.CLASS_NAME, 'v-grid-tablewrapper')
     e_table_body = e_grid.find_element(By.TAG_NAME, 'tbody')
-    codes = [[v.text for v in e_grid.find_elements(By.TAG_NAME, 'th')]]
-    while True:
-        rows = e_table_body.find_elements(By.TAG_NAME, 'tr')
-        for e in rows:
-            codes.append([v.text for v in e.find_elements(By.TAG_NAME, 'td')])
-        pages = e_result.find_element(By.CLASS_NAME, 'paging-align-fix').find_elements(By.TAG_NAME, 'div')
-        if int(pages[-1].get_attribute('tabindex')) != 0:
-            break
-        e_result.find_element(By.CLASS_NAME, 'last').click()
+    e_rows = e_table_body.find_elements(By.TAG_NAME, 'tr')
+    codes = [[v.text for v in e_grid.find_elements(By.TAG_NAME, 'th')]]     # Get column names
+    try:    # Haven't found a clean way to detect last row
+        while True:
+            for e in e_rows:    # Get a page of country rows
+                codes.append([v.text for v in e.find_elements(By.TAG_NAME, 'td')])
+            e_result.find_element(By.CLASS_NAME, 'last').click()    # Go to next page
+    except StaleElementReferenceException:
+        pass
     return codes
 
 
@@ -113,7 +114,7 @@ def main():
         # print(f'{len(subdivisions)} ISO 3166-2 Subdivisions in "{title}"')
 
     with open('codes.json', 'w') as fp:
-        json.dump(codes)
+        json.dump(codes, fp)
 
     """
     for v in summary:

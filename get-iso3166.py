@@ -113,7 +113,7 @@ def main():
         # title = driver.title
         # print(f'{len(subdivisions)} ISO 3166-2 Subdivisions in "{title}"')
 
-    with open('codes.json', 'w') as fp:
+    with open('json/codes.json', 'w') as fp:
         json.dump(codes, fp)
 
     """

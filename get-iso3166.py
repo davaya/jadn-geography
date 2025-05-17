@@ -1,18 +1,19 @@
 import json
+import os
+from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import StaleElementReferenceException
 from time import sleep
 
 
-def initialize_driver():
+def initialize_driver() -> webdriver.Chrome:
     options = webdriver.ChromeOptions()
-    # options.add_argument('--headless=new')
-    options.add_argument('--disable-gpu')
+    # options.add_argument('--headless=new')      # Comment out to see what's happening
+    options.add_argument('--disable-gpu')       # Not needed, reduce dependencies
     return webdriver.Chrome(options=options)
 
 
-def get_country_codes(driver, url) -> list[list]:
+def get_country_codes(driver, url) -> list[list[str]]:
     """
     Retrieve ISO 3166-1 Country Code info from Online Browsing Platform
 
@@ -27,18 +28,22 @@ def get_country_codes(driver, url) -> list[list]:
     pg['country codes'].click()     # Select "Country codes"
     driver.find_element(By.CLASS_NAME, 'v-button-go').find_element(By.CLASS_NAME, 'v-button-caption').click() # SEARCH
 
-    e_result = driver.find_element(By.CLASS_NAME, 'search-result-layout')
-    e_grid = e_result.find_element(By.CLASS_NAME, 'v-grid-tablewrapper')
-    e_table_body = e_grid.find_element(By.TAG_NAME, 'tbody')
-    e_rows = e_table_body.find_elements(By.TAG_NAME, 'tr')
-    codes = [[v.text for v in e_grid.find_elements(By.TAG_NAME, 'th')]]     # Get column names
-    try:    # Haven't found a clean way to detect last row
-        while True:
-            for e in e_rows:    # Get a page of country rows
-                codes.append([v.text for v in e.find_elements(By.TAG_NAME, 'td')])
-            e_result.find_element(By.CLASS_NAME, 'last').click()    # Go to next page
-    except StaleElementReferenceException:
-        pass
+    e_page = driver.find_element(By.CLASS_NAME, 'search-result-layout')
+    soup = BeautifulSoup(e_page.find_element(By.TAG_NAME, 'thead').get_attribute('innerHTML'), 'html.parser')
+    codes = [[v.text for v in soup.find_all('th')]]
+    while True:
+        print('.', end='')
+        e_page = driver.find_element(By.CLASS_NAME, 'search-result-layout')
+        page = e_page.find_element(By.TAG_NAME, 'tbody').get_attribute('innerHTML')
+        for row in BeautifulSoup(page, 'html.parser').find_all('tr'):
+            codes.append([v.text for v in row])
+        last = e_page.find_element(By.CLASS_NAME, 'paging-align-fix').find_elements(By.CLASS_NAME, 'v-button')[-1].get_attribute('tabindex')
+        if last != '0':
+            break
+        e_page.find_element(By.CLASS_NAME, 'last').click()    # Go to next page
+        sleep(1)
+    driver.quit()
+    print(f'\n{len(codes)}')
     return codes
 
 
@@ -113,7 +118,8 @@ def main():
         # title = driver.title
         # print(f'{len(subdivisions)} ISO 3166-2 Subdivisions in "{title}"')
 
-    with open('json/codes.json', 'w') as fp:
+    os.makedirs('out', exist_ok=True)
+    with open('out/codes.json', 'w', encoding='utf8') as fp:
         json.dump(codes, fp)
 
     """
